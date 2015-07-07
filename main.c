@@ -68,6 +68,7 @@ static uchar idleRate; // repeat rate for keyboards
 uint32_t readFromKeyboard = 0;
 uchar newResponse = 0;
 signed char keys_pressed = 0;
+uchar keysHaveChanged = 0;
 
 
 usbMsgLen_t usbFunctionSetup(uchar data[8]) {
@@ -101,6 +102,8 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
 
 #define ledRedOn()    PORTC &= ~(1 << PC1)
 #define ledRedOff()   PORTC |= (1 << PC1)
+#define pb5high()    PORTB |= (1 << PB5)
+#define pb5low()      PORTB &= ~(1 << PB5)
 #define ledGreenOn()  PORTC &= ~(1 << PC0)
 #define ledGreenOff() PORTC |= (1 << PC0)
 
@@ -112,6 +115,24 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
 // 10 are 833.33 ns
 #define DELAY_10_CLK DELAY_5_CLK;DELAY_5_CLK
 
+void DELAY_HALF_KB_CLK() {
+    uint16_t i;
+    for (i = 0; i < 988; ++i)
+    {
+        DELAY_1_CLK;
+    }
+}
+
+void wiggle(uchar times) {
+    uchar i;
+    for ( i = 0; i < times ; i++)
+    {
+        pb5high();
+        DELAY_1_CLK;
+        pb5low();
+        DELAY_1_CLK;
+    }
+}
 usbMsgLen_t usbFunctionWrite(uint8_t * data, uchar len) {
 	if (data[0] == LED_state)
         return 1;
@@ -140,6 +161,7 @@ void key_down(uint8_t down_key) {
         keyboard_report.keycode[keys_pressed] = down_key;
         keys_pressed++;
     }
+    keysHaveChanged = 1;
 }
 
 void key_up(uint8_t up_key) {
@@ -157,42 +179,77 @@ void key_up(uint8_t up_key) {
             break;
         }
     }
+    keysHaveChanged = 1; 
 }
 
 void parseKeyboardResponse() {
+    wiggle(7);
     switch((uint32_t)readFromKeyboard) {
         case 0x1C: key_down(0x04); break; // represents a 
         case ((0x1C << 8) | 0x01): key_up(0x04); break; 
-        default: break;
+        default:  wiggle(6); break;
     }
+    readFromKeyboard = 0;
+
 }
 
 
 void startReading() {
-    uchar i;
-    DELAY_5_CLK;
-
+    uchar i, n;
+    DELAY_HALF_KB_CLK();
+    // pb5high();rea
     if (newResponse)
     {
-        readFromKeyboard = 0x02;
+        // #weCantEven
     } else {
-        readFromKeyboard == readFromKeyboard << 1;
+        // srsly
+        // readFromKeyboard = readFromKeyboard << 1;
     }
     for (i = 0; i < 8; i++)
     {
-        DELAY_10_CLK; //wait for next bit to arrive on kbRXD
+        DELAY_HALF_KB_CLK();
+        DELAY_HALF_KB_CLK(); //wait for next bit to arrive on kbRXD
         // maybe the time needed to take a measurement will be destructive, but that needs to be tested
+        // doesn't seem to be a problem
+        
+        readFromKeyboard = readFromKeyboard << 1;
         readFromKeyboard |= (PINB & (1 << PB4)) >> PB4;
-        readFromKeyboard == readFromKeyboard << 1;
+        // indicate measurement
+        pb5high();
+        DELAY_1_CLK;
+        pb5low();
+        DELAY_1_CLK;
     }
-    if (!(readFromKeyboard & 0x01))
-    {
-        newResponse = 0;
-    } else {
-        parseKeyboardResponse();
-    }
-    DELAY_5_CLK;
+
+    pb5low();
     DELAY_1_CLK;
+    pb5high();
+    DELAY_1_CLK;
+    DELAY_1_CLK;
+    pb5low();
+    DELAY_1_CLK;
+    n = (uchar)readFromKeyboard;
+    for (i = 0; i < 8; i++)
+    {
+        if ( n & (0b10000000 >> i))
+        {
+            pb5high();
+        } else {
+            pb5low();
+        }
+    }
+    if (readFromKeyboard & 0x01)
+    {
+        parseKeyboardResponse();
+        newResponse = 1;
+        wiggle(2);
+    } else {
+        newResponse = 0;
+        wiggle(3);
+        
+    }
+    DELAY_HALF_KB_CLK();
+    // pb5low();
     // the additional wait time is for not detecting another byte right at the end of this one
     // 420 would be enought but just to be sure 500
 }
@@ -219,6 +276,7 @@ int main() {
     }
     /* all USB and ISP pins inputs */
     DDRB = 0;
+    DDRB |= (1 << PB5); 
 
     /* all inputs except PC0, PC1 */
     DDRC = 0x03;
@@ -230,16 +288,24 @@ int main() {
     /* main event loop */
     usbInit();
     sei();
+    ledRedOff();
     for (;;) {
         usbPoll();
         if (PINB & (1 << PB4))
         {
-            //ledRedOn();
+            // ledRedOn();
+            // pb5high();
+            ledRedOn();
             startReading();
         } else {
-
+            // pb5low();
             ledRedOff();
             //ledGreenOff();
+        }
+        if (usbInterruptIsReady() && keysHaveChanged)
+        {
+            usbSetInterrupt((void *)&keyboard_report, sizeof(keyboard_report));
+            keysHaveChanged = 0;
         }
     }
     return 0;

@@ -11,7 +11,7 @@
 #ifndef __clock_h_included__
 #define	__clock_h_included__
 
-#define F_CPU           12000000L   /* 12MHz */
+/* #define F_CPU           12000000L   12MHz  already defined in usbdrv*/
 #define TIMERVALUE      TCNT0
 #define CLOCK_T_320us	60
 
