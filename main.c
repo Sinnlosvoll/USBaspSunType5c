@@ -69,6 +69,7 @@ uint32_t readFromKeyboard = 0;
 uchar newResponse = 0;
 signed char keys_pressed = 0;
 uchar keysHaveChanged = 0;
+uint16_t emergencyResponceCounter = 0;
 
 
 usbMsgLen_t usbFunctionSetup(uchar data[8]) {
@@ -207,16 +208,48 @@ void key_up(uint8_t up_key) {
     keysHaveChanged = 1; 
 }
 
+
+uint8_t map(uint8_t keyCodeIn) {
+    switch ((keyCodeIn & ~(0x01))) {
+        case 0x4c : return 0x04; // a
+        case 0x8c : return 0x16; // s
+        case 0x0c : return 0x07; // d
+        default : return 0xFF; // return error code
+    }
+}
+
 void parseKeyboardResponse() {
+    uint8_t usbHIDcode = 0xFF;
+    if ((readFromKeyboard & 0b1111111100000000) != 0)
+    {
+        usbHIDcode = map((uint8_t)(readFromKeyboard >> 8));
+
+        if (usbHIDcode == 0xFF)
+            wiggle(12);
+        else
+            key_up(usbHIDcode);
+
+    } else {
+        usbHIDcode = map((uint8_t)(readFromKeyboard >> 0));
+        if (usbHIDcode == 0xFF)
+            wiggle(12);
+        else
+            key_down(usbHIDcode);
+
+    }
+    
     wiggle(7);
     displayValue((uint32_t)readFromKeyboard);
-    switch((uint32_t)readFromKeyboard) {
-        case 0x4D: key_down(0x04); break; // represents a 
-        case (((0x4D & ~(0x01)) << 8) | 0x01): key_up(0x04); break; 
-        default:  wiggle(6); break;
-    }
+
     readFromKeyboard = 0;
 
+}
+
+
+void emergencyParse() {
+    // for now lets just assume, that this only happens when multiple keys are pressed and one of them comes back up
+    // for an unknown reason there is no break command for that key, only for the last one of that sequence that comes back up
+    key_up(map((uint8_t)readFromKeyboard));
 }
 
 
@@ -274,6 +307,7 @@ void startReading() {
     } else {
         newResponse = 0;
         wiggle(3);
+        emergencyResponceCounter = 2000;
         
     }
     DELAY_HALF_KB_CLK();
@@ -325,9 +359,19 @@ int main() {
             // ledRedOn();
             // pb5high();
             ledRedOn();
+            emergencyResponceCounter = 0;
             startReading();
+
         } else {
             // pb5low();
+            if (emergencyResponceCounter == 1)
+            {
+                emergencyParse();
+                emergencyResponceCounter = 0;
+            } else {
+                if (emergencyResponceCounter > 0) 
+                    emergencyResponceCounter--;
+            }
             ledRedOff();
             //ledGreenOff();
         }
