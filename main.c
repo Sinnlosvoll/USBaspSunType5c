@@ -102,8 +102,10 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
 
 #define ledRedOn()    PORTC &= ~(1 << PC1)
 #define ledRedOff()   PORTC |= (1 << PC1)
-#define pb5high()    PORTB |= (1 << PB5)
+#define pb5high()     PORTB |= (1 << PB5)
 #define pb5low()      PORTB &= ~(1 << PB5)
+#define pb3low()      PORTB &= ~(1 << PB3)
+#define pb3high()     PORTB |= (1 << PB3)
 #define ledGreenOn()  PORTC &= ~(1 << PC0)
 #define ledGreenOff() PORTC |= (1 << PC0)
 
@@ -120,6 +122,7 @@ void DELAY_HALF_KB_CLK() {
     for (i = 0; i < 988; ++i)
     {
         DELAY_1_CLK;
+        // not 4793 times due to time needed to increment i and such
     }
 }
 
@@ -133,6 +136,28 @@ void wiggle(uchar times) {
         DELAY_1_CLK;
     }
 }
+
+void displayValue(uint32_t toDisplay) {
+    uint8_t counter;
+
+    for (counter = 0; counter < 32; counter++)
+    {
+        if ((toDisplay >> (31 - counter)) & 0x01)
+        {
+            pb5high();
+            pb3high();
+            DELAY_1_CLK;
+            pb3low();
+            pb5low();
+        } else {
+            pb3high();
+            DELAY_1_CLK;
+            pb3low();
+        }
+    }
+}
+
+
 usbMsgLen_t usbFunctionWrite(uint8_t * data, uchar len) {
 	if (data[0] == LED_state)
         return 1;
@@ -184,9 +209,10 @@ void key_up(uint8_t up_key) {
 
 void parseKeyboardResponse() {
     wiggle(7);
+    displayValue((uint32_t)readFromKeyboard);
     switch((uint32_t)readFromKeyboard) {
-        case 0x1C: key_down(0x04); break; // represents a 
-        case ((0x1C << 8) | 0x01): key_up(0x04); break; 
+        case 0x4D: key_down(0x04); break; // represents a 
+        case (((0x4D & ~(0x01)) << 8) | 0x01): key_up(0x04); break; 
         default:  wiggle(6); break;
     }
     readFromKeyboard = 0;
@@ -228,6 +254,7 @@ void startReading() {
     DELAY_1_CLK;
     pb5low();
     DELAY_1_CLK;
+    /*
     n = (uchar)readFromKeyboard;
     for (i = 0; i < 8; i++)
     {
@@ -238,6 +265,7 @@ void startReading() {
             pb5low();
         }
     }
+    */
     if (readFromKeyboard & 0x01)
     {
         parseKeyboardResponse();
@@ -277,6 +305,7 @@ int main() {
     /* all USB and ISP pins inputs */
     DDRB = 0;
     DDRB |= (1 << PB5); 
+    DDRB |= (1 << PB3);
 
     /* all inputs except PC0, PC1 */
     DDRC = 0x03;
