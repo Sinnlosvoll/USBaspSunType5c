@@ -120,6 +120,8 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
 
 void DELAY_HALF_KB_CLK() {
     uint16_t i;
+    _delay_us(417);
+    return;
     for (i = 0; i < 988; ++i)
     {
         DELAY_1_CLK;
@@ -137,6 +139,50 @@ void wiggle(uchar times) {
         DELAY_1_CLK;
     }
 }
+
+
+void sendToKeyboard(uint8_t toSend, uchar isLastOne) {
+    uchar i;
+    cli();
+    pb3low();
+    pb5high();
+    pb5low();
+    _delay_us(417);
+    _delay_us(417);
+    for (i = 0; i < 7; i++)
+    {
+        if (toSend  & (0x01 << (6 - i)))
+        {
+            pb3low();
+            pb5high();
+            pb5low();
+        } else {
+            pb3high();
+            pb5high();
+            pb5low();
+        }
+        _delay_us(417);
+        _delay_us(417);
+    }
+    if (isLastOne)
+    {
+        pb3low();
+        pb5high();
+        pb5low();
+        _delay_us(417);
+        _delay_us(417);
+    } else {
+        pb3high();
+        pb5high();
+        pb5low();
+        _delay_us(417);
+        _delay_us(417);
+
+    }
+    pb3high();
+    sei();
+}
+
 
 void displayValue(uint32_t toDisplay) {
     uint8_t counter;
@@ -166,10 +212,14 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, uchar len) {
         LED_state = data[0];
 	
     // LED state changed
-	if(LED_state & CAPS_LOCK)
+	if(LED_state & CAPS_LOCK){
 		ledGreenOn(); // LED on
-	else
+        sendToKeyboard((uint8_t)0x02, 1);
+    }
+	else {
 		ledGreenOff(); // LED off
+        sendToKeyboard((uint8_t)0x03, 1);
+    }
 	
 	return 1; // Data read, not expecting more
 }
@@ -178,10 +228,6 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, uchar len) {
 #define STATE_WAIT 0
 #define STATE_SEND_KEY 1
 #define STATE_RELEASE_KEY 2
-
-void sendToKeyboard() {
-    
-}
 
 void key_down(uint8_t down_key) {
     /* we only add a key to our pressed list, when we have less than 6 already pressed.
@@ -318,12 +364,10 @@ uint8_t map(uint8_t keyCodeIn) {
         case 0x9c : return 0x61; // keypad 9
         case 0xc9 : return 0x49; // insert
         case 0xd2 : return 0x4a; // home
-        case 0xF8 : return 0x4b; // PgUp
-        case 0xF8 : return 0x4b; // delete
-        case 0xF8 : return 0x4b; // end
-        case 0xbc : return 0x4c; // PgDn
-        case 0xac : return 0x4d;
-        case 0x20 : return 0x4e;
+        case 0xF8 : return 0x4b; // PgUp 
+        case 0xbc : return 0x4c; // delete
+        case 0xac : return 0x4d; // end
+        case 0x20 : return 0x4e; // PgDn
 
 
         default : return 0xFF; // return error code
@@ -467,6 +511,7 @@ int main() {
     usbInit();
     sei();
     ledRedOff();
+    pb3high();
     for (;;) {
         usbPoll();
         if (PINB & (1 << PB4))

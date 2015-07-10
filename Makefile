@@ -5,7 +5,7 @@ DUDE = avrdude
 
 # If you are not using ATtiny85 and the USBtiny programmer, 
 # update the lines below to match your configuration
-CFLAGS = -Wall -O2 -Iusbdrv  -mmcu=atmega8 -DF_CPU=12000000 -pedantic
+CFLAGS = -Wall -O3 -Iusbdrv  -mmcu=atmega8 -DF_CPU=12000000 -pedantic
 OBJFLAGS = -j .text -j .data -O ihex
 DUDEFLAGS = -p atmega8 -c usbasp -v
 
