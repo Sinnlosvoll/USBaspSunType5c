@@ -13,6 +13,8 @@
 
 #include "usbdrv.h"
 #include "clock.h"
+
+#define USEINVERTEDLOGIC 1
  
 
 // ************************
@@ -109,7 +111,8 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
 #define pb3high()     PORTB |= (1 << PB3)
 #define ledGreenOn()  PORTC &= ~(1 << PC0)
 #define ledGreenOff() PORTC |= (1 << PC0)
-
+#define bellOn()      sendToKeyboard(0x02, 1)
+#define bellOff()     sendToKeyboard(0x03, 1)
 
 // due to the 12MHz crystal a clk is 83.33ns
 #define DELAY_1_CLK asm volatile("nop")
@@ -144,42 +147,46 @@ void wiggle(uchar times) {
 void sendToKeyboard(uint8_t toSend, uchar isLastOne) {
     uchar i;
     cli();
-    pb3low();
-    pb5high();
-    pb5low();
-    _delay_us(417);
-    _delay_us(417);
-    for (i = 0; i < 7; i++)
-    {
-        if (toSend  & (0x01 << (6 - i)))
-        {
-            pb3low();
-            pb5high();
-            pb5low();
-        } else {
-            pb3high();
-            pb5high();
-            pb5low();
-        }
-        _delay_us(417);
-        _delay_us(417);
-    }
-    if (isLastOne)
-    {
-        pb3low();
-        pb5high();
-        pb5low();
-        _delay_us(417);
-        _delay_us(417);
-    } else {
-        pb3high();
-        pb5high();
-        pb5low();
-        _delay_us(417);
-        _delay_us(417);
-
-    }
     pb3high();
+   pb5high();
+   pb5low();
+   _delay_us(417);
+   _delay_us(417);
+   // the keyboard wants its data as inverted logic and lsb first
+   // don't ask me why they chose this format
+   for (i = 0; i < 7; i++)
+   {
+       if (toSend  & (0x01 << i))
+       {
+           pb3low();
+           pb5high();
+           pb5low();
+       } else {
+           pb3high();
+           pb5high();
+           pb5low();
+       }
+       _delay_us(417);
+       _delay_us(417);
+   }
+   if (isLastOne)
+   {
+       pb3high();
+       pb5high();
+       pb5low();
+       _delay_us(417);
+       _delay_us(417);
+   } else {
+       pb3low();
+       pb5high();
+       pb5low();
+       _delay_us(417);
+       _delay_us(417);
+
+   }
+   pb3low();
+    }
+    
     sei();
 }
 
@@ -511,7 +518,8 @@ int main() {
     usbInit();
     sei();
     ledRedOff();
-    pb3high();
+    pb3low();
+    
     for (;;) {
         usbPoll();
         if (PINB & (1 << PB4))
