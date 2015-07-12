@@ -72,6 +72,7 @@ uchar newResponse = 0;
 signed char keys_pressed = 0;
 uchar keysHaveChanged = 0;
 uint16_t emergencyResponceCounter = 0;
+uint8_t leds = 0;
 
 
 usbMsgLen_t usbFunctionSetup(uchar data[8]) {
@@ -99,9 +100,10 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
     return 0; // by default don't return any data
 }
 
-#define NUM_LOCK 1
-#define CAPS_LOCK 2
+#define NUM_LOCK    1
+#define CAPS_LOCK   2
 #define SCROLL_LOCK 4
+#define COMPOSE     0x08
 
 #define ledRedOn()    PORTC &= ~(1 << PC1)
 #define ledRedOff()   PORTC |= (1 << PC1)
@@ -113,6 +115,9 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
 #define ledGreenOff() PORTC |= (1 << PC0)
 #define bellOn()      sendToKeyboard(0x02, 1)
 #define bellOff()     sendToKeyboard(0x03, 1)
+#define updateLeds()  sendToKeyboard(0x00e, 1);sendToKeyboard(leds, 1)
+#define DELAY_HALF_KB_CLK() _delay_us(417)
+#define DELAY_FULL_KB_CLK() _delay_us(833)
 
 // due to the 12MHz crystal a clk is 83.33ns
 #define DELAY_1_CLK asm volatile("nop")
@@ -121,16 +126,6 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
 // 10 are 833.33 ns
 #define DELAY_10_CLK DELAY_5_CLK;DELAY_5_CLK
 
-void DELAY_HALF_KB_CLK() {
-    uint16_t i;
-    _delay_us(417);
-    return;
-    for (i = 0; i < 988; ++i)
-    {
-        DELAY_1_CLK;
-        // not 4793 times due to time needed to increment i and such
-    }
-}
 
 void wiggle(uchar times) {
     uchar i;
@@ -144,48 +139,45 @@ void wiggle(uchar times) {
 }
 
 
+
 void sendToKeyboard(uint8_t toSend, uchar isLastOne) {
     uchar i;
     cli();
     pb3high();
-   pb5high();
-   pb5low();
-   _delay_us(417);
-   _delay_us(417);
-   // the keyboard wants its data as inverted logic and lsb first
-   // don't ask me why they chose this format
-   for (i = 0; i < 7; i++)
-   {
+    wiggle(1);
+    DELAY_FULL_KB_CLK();
+    // the keyboard wants its data as inverted logic and lsb first
+    // don't ask me why they chose this format
+    for (i = 0; i < 7; i++)
+    {
        if (toSend  & (0x01 << i))
        {
            pb3low();
-           pb5high();
-           pb5low();
+           wiggle(1);
        } else {
            pb3high();
-           pb5high();
-           pb5low();
+           wiggle(1);
        }
-       _delay_us(417);
-       _delay_us(417);
-   }
-   if (isLastOne)
-   {
-       pb3high();
-       pb5high();
-       pb5low();
-       _delay_us(417);
-       _delay_us(417);
-   } else {
-       pb3low();
-       pb5high();
-       pb5low();
-       _delay_us(417);
-       _delay_us(417);
-
-   }
-   pb3low();
+       DELAY_FULL_KB_CLK();
     }
+    if (isLastOne)
+    {
+       pb3high();
+       wiggle(3);
+       DELAY_FULL_KB_CLK();
+       pb3low();
+       DELAY_FULL_KB_CLK();
+       DELAY_FULL_KB_CLK();
+    } else {
+       pb3low();
+       wiggle(4);
+       DELAY_FULL_KB_CLK();
+       DELAY_FULL_KB_CLK();
+
+    }
+    pb3low();
+    DELAY_FULL_KB_CLK();
+
     
     sei();
 }
@@ -220,13 +212,34 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, uchar len) {
 	
     // LED state changed
 	if(LED_state & CAPS_LOCK){
-		ledGreenOn(); // LED on
-        sendToKeyboard((uint8_t)0x02, 1);
+        leds |= (1 << 3);
+        //sendToKeyboard((uint8_t)0x02, 1);
     }
 	else {
-		ledGreenOff(); // LED off
-        sendToKeyboard((uint8_t)0x03, 1);
+        leds &= ~(1 << 3);
+        //sendToKeyboard((uint8_t)0x03, 1);
     }
+    if(LED_state & NUM_LOCK){
+        leds |= (1 << 0);
+    }
+    else {
+        leds &= ~(1 << 0);
+    }
+    if(LED_state & SCROLL_LOCK){
+        ledGreenOn(); // LED on
+        leds |= (1 << 2);
+    }
+    else {
+        ledGreenOff(); // LED off
+        leds &= ~(1 << 2);
+    }
+    if(LED_state & COMPOSE){
+        leds |= (1 << 1);
+    }
+    else {
+        leds &= ~(1 << 1);
+    }
+    updateLeds();
 	
 	return 1; // Data read, not expecting more
 }
@@ -420,7 +433,7 @@ void emergencyParse() {
 
 
 void startReading() {
-    uchar i, n;
+    uchar i;
     DELAY_HALF_KB_CLK();
     // pb5high();rea
     if (newResponse)
@@ -432,39 +445,15 @@ void startReading() {
     }
     for (i = 0; i < 8; i++)
     {
-        DELAY_HALF_KB_CLK();
-        DELAY_HALF_KB_CLK(); //wait for next bit to arrive on kbRXD
-        // maybe the time needed to take a measurement will be destructive, but that needs to be tested
-        // doesn't seem to be a problem
+        DELAY_FULL_KB_CLK();
         
         readFromKeyboard = readFromKeyboard << 1;
         readFromKeyboard |= (PINB & (1 << PB4)) >> PB4;
         // indicate measurement
-        pb5high();
-        DELAY_1_CLK;
-        pb5low();
-        DELAY_1_CLK;
+        wiggle(1);
     }
 
-    pb5low();
-    DELAY_1_CLK;
-    pb5high();
-    DELAY_1_CLK;
-    DELAY_1_CLK;
-    pb5low();
-    DELAY_1_CLK;
-    /*
-    n = (uchar)readFromKeyboard;
-    for (i = 0; i < 8; i++)
-    {
-        if ( n & (0b10000000 >> i))
-        {
-            pb5high();
-        } else {
-            pb5low();
-        }
-    }
-    */
+
     if (readFromKeyboard & 0x01)
     {
         parseKeyboardResponse();
