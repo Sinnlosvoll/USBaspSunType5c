@@ -13,51 +13,50 @@
 
 #include "usbdrv.h"
 #include "clock.h"
+#include "main.h"
 
-#define USEINVERTEDLOGIC 1
  
 
-// ************************
+/* ************************
 // *** USB HID ROUTINES ***
 // ************************
 
 // From Frank Zhao's USB Business Card project
-// http://www.frank-zhao.com/cache/usbbusinesscard_details.php
+// http://www.frank-zhao.com/cache/usbbusinesscard_details.php */
 PROGMEM const char usbHidReportDescriptor[USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH] = {
-    0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
-    0x09, 0x06,                    // USAGE (Keyboard)
-    0xa1, 0x01,                    // COLLECTION (Application)
-    0x75, 0x01,                    //   REPORT_SIZE (1)
-    0x95, 0x08,                    //   REPORT_COUNT (8)
-    0x05, 0x07,                    //   USAGE_PAGE (Keyboard)(Key Codes)
-    0x19, 0xe0,                    //   USAGE_MINIMUM (Keyboard LeftControl)(224)
-    0x29, 0xe7,                    //   USAGE_MAXIMUM (Keyboard Right GUI)(231)
-    0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
-    0x25, 0x01,                    //   LOGICAL_MAXIMUM (1)
-    0x81, 0x02,                    //   INPUT (Data,Var,Abs) ; Modifier byte
-    0x95, 0x01,                    //   REPORT_COUNT (1)
-    0x75, 0x08,                    //   REPORT_SIZE (8)
-    0x81, 0x03,                    //   INPUT (Cnst,Var,Abs) ; Reserved byte
-    0x95, 0x05,                    //   REPORT_COUNT (5)
-    0x75, 0x01,                    //   REPORT_SIZE (1)
-    0x05, 0x08,                    //   USAGE_PAGE (LEDs)
-    0x19, 0x01,                    //   USAGE_MINIMUM (Num Lock)
-    0x29, 0x05,                    //   USAGE_MAXIMUM (Kana)
-    0x91, 0x02,                    //   OUTPUT (Data,Var,Abs) ; LED report
-    0x95, 0x01,                    //   REPORT_COUNT (1)
-    0x75, 0x03,                    //   REPORT_SIZE (3)
-    0x91, 0x03,                    //   OUTPUT (Cnst,Var,Abs) ; LED report padding
-    0x95, 0x06,                    //   REPORT_COUNT (6)
-    0x75, 0x08,                    //   REPORT_SIZE (8)
-    0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
-    0x25, 0x65,                    //   LOGICAL_MAXIMUM (101)
-    0x05, 0x07,                    //   USAGE_PAGE (Keyboard)(Key Codes)
-    0x19, 0x00,                    //   USAGE_MINIMUM (Reserved (no event indicated))(0)
-    0x29, 0x65,                    //   USAGE_MAXIMUM (Keyboard Application)(101)
-    0x81, 0x00,                    //   INPUT (Data,Ary,Abs)
-    0xc0                           // END_COLLECTION
+    0x05, 0x01,                    /* USAGE_PAGE (Generic Desktop) */
+    0x09, 0x06,                    /* USAGE (Keyboard) */
+    0xa1, 0x01,                    /* COLLECTION (Application) */
+    0x75, 0x01,                    /*   REPORT_SIZE (1) */
+    0x95, 0x08,                    /*   REPORT_COUNT (8) */
+    0x05, 0x07,                    /*   USAGE_PAGE (Keyboard)(Key Codes) */
+    0x19, 0xe0,                    /*   USAGE_MINIMUM (Keyboard LeftControl)(224) */
+    0x29, 0xe7,                    /*   USAGE_MAXIMUM (Keyboard Right GUI)(231) */
+    0x15, 0x00,                    /*   LOGICAL_MINIMUM (0) */
+    0x25, 0x01,                    /*   LOGICAL_MAXIMUM (1) */
+    0x81, 0x02,                    /*   INPUT (Data,Var,Abs) ; Modifier byte */
+    0x95, 0x01,                    /*   REPORT_COUNT (1) */
+    0x75, 0x08,                    /*   REPORT_SIZE (8) */
+    0x81, 0x03,                    /*   INPUT (Cnst,Var,Abs) ; Reserved byte */
+    0x95, 0x05,                    /*   REPORT_COUNT (5) */
+    0x75, 0x01,                    /*   REPORT_SIZE (1) */
+    0x05, 0x08,                    /*   USAGE_PAGE (LEDs) */
+    0x19, 0x01,                    /*   USAGE_MINIMUM (Num Lock) */
+    0x29, 0x05,                    /*   USAGE_MAXIMUM (Kana) */
+    0x91, 0x02,                    /*   OUTPUT (Data,Var,Abs) ; LED report */
+    0x95, 0x01,                    /*   REPORT_COUNT (1) */
+    0x75, 0x03,                    /*   REPORT_SIZE (3) */
+    0x91, 0x03,                    /*   OUTPUT (Cnst,Var,Abs) ; LED report padding */
+    0x95, 0x06,                    /*   REPORT_COUNT (6) */
+    0x75, 0x08,                    /*   REPORT_SIZE (8) */
+    0x15, 0x00,                    /*   LOGICAL_MINIMUM (0) */
+    0x25, 0x65,                    /*   LOGICAL_MAXIMUM (101) */
+    0x05, 0x07,                    /*   USAGE_PAGE (Keyboard)(Key Codes) */
+    0x19, 0x00,                    /*   USAGE_MINIMUM (Reserved (no event indicated))(0) */
+    0x29, 0x65,                    /*   USAGE_MAXIMUM (Keyboard Application)(101) */
+    0x81, 0x00,                    /*   INPUT (Data,Ary,Abs) */
+    0xc0                           /* END_COLLECTION */
 };
-
 typedef struct {
 	uint8_t modifier;
 	uint8_t reserved;
@@ -67,10 +66,10 @@ typedef struct {
 static keyboard_report_t keyboard_report; // sent to PC
 volatile static uchar LED_state = 0xff; // received from PC
 static uchar idleRate; // repeat rate for keyboards
+
 uint32_t readFromKeyboard = 0;
-uchar newResponse = 0;
 signed char keys_pressed = 0;
-uchar keysHaveChanged = 0;
+uint8_t keysHaveChanged = 0;
 uint16_t emergencyResponceCounter = 0;
 uint8_t leds = 0;
 
@@ -100,107 +99,84 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
     return 0; // by default don't return any data
 }
 
-#define NUM_LOCK    1
-#define CAPS_LOCK   2
-#define SCROLL_LOCK 4
-#define COMPOSE     0x08
 
-#define ledRedOn()    PORTC &= ~(1 << PC1)
-#define ledRedOff()   PORTC |= (1 << PC1)
-#define pb5high()     PORTB |= (1 << PB5)
-#define pb5low()      PORTB &= ~(1 << PB5)
-#define pb3low()      PORTB &= ~(1 << PB3)
-#define pb3high()     PORTB |= (1 << PB3)
-#define ledGreenOn()  PORTC &= ~(1 << PC0)
-#define ledGreenOff() PORTC |= (1 << PC0)
-#define bellOn()      sendToKeyboard(0x02, 1)
-#define bellOff()     sendToKeyboard(0x03, 1)
-#define updateLeds()  sendToKeyboard(0x00e, 1);sendToKeyboard(leds, 1)
-#define DELAY_HALF_KB_CLK() _delay_us(417)
-#define DELAY_FULL_KB_CLK() _delay_us(833)
-
-// due to the 12MHz crystal a clk is 83.33ns
-#define DELAY_1_CLK asm volatile("nop")
-// 5 are 416.7 ns
-#define DELAY_5_CLK DELAY_1_CLK;DELAY_1_CLK;DELAY_1_CLK;DELAY_1_CLK;DELAY_1_CLK
-// 10 are 833.33 ns
-#define DELAY_10_CLK DELAY_5_CLK;DELAY_5_CLK
 
 
 void wiggle(uchar times) {
-    uchar i;
-    for ( i = 0; i < times ; i++)
+    if (DEBUGMODE)
     {
-        pb5high();
-        DELAY_1_CLK;
-        pb5low();
-        DELAY_1_CLK;
+        uchar i;
+        for ( i = 0; i < times ; i++)
+        {
+            wiggleHigh();
+            DELAY_1_CLK;
+            wiggleLow();
+            DELAY_1_CLK;
+        }
     }
+
 }
 
 
 
-void sendToKeyboard(uint8_t toSend, uchar isLastOne) {
+void sendToKeyboard(uint8_t toSend) {
     uchar i;
     cli();
-    pb3high();
+    TXDhigh();
     wiggle(1);
     DELAY_FULL_KB_CLK();
     // the keyboard wants its data as inverted logic and lsb first
     // don't ask me why they chose this format
     for (i = 0; i < 7; i++)
     {
-       if (toSend  & (0x01 << i))
-       {
-           pb3low();
-           wiggle(1);
-       } else {
-           pb3high();
-           wiggle(1);
-       }
-       DELAY_FULL_KB_CLK();
+        if (toSend  & (0x01 << i))
+        {
+            TXDlow();
+            wiggle(1);
+        } else {
+            TXDhigh();
+            wiggle(1);
+        }
+        DELAY_FULL_KB_CLK();
     }
-    if (isLastOne)
-    {
-       pb3high();
-       wiggle(3);
-       DELAY_FULL_KB_CLK();
-       pb3low();
-       DELAY_FULL_KB_CLK();
-       DELAY_FULL_KB_CLK();
-    } else {
-       pb3low();
-       wiggle(4);
-       DELAY_FULL_KB_CLK();
-       DELAY_FULL_KB_CLK();
 
-    }
-    pb3low();
+    TXDhigh();
+    wiggle(3);
+    DELAY_FULL_KB_CLK();
+    TXDlow();
+    DELAY_FULL_KB_CLK();
     DELAY_FULL_KB_CLK();
 
-    
+    TXDlow();
+    DELAY_FULL_KB_CLK();
+
+
     sei();
 }
 
 
 void displayValue(uint32_t toDisplay) {
-    uint8_t counter;
-
-    for (counter = 0; counter < 32; counter++)
+    if (DEBUGMODE)
     {
-        if ((toDisplay >> (31 - counter)) & 0x01)
+        uint8_t counter;
+
+        for (counter = 0; counter < 32; counter++)
         {
-            pb5high();
-            pb3high();
-            DELAY_1_CLK;
-            pb3low();
-            pb5low();
-        } else {
-            pb3high();
-            DELAY_1_CLK;
-            pb3low();
+            if ((toDisplay >> (31 - counter)) & 0x01)
+            {
+                wiggleHigh();
+                TXDhigh();
+                DELAY_1_CLK;
+                TXDlow();
+                wiggleLow();
+            } else {
+                TXDhigh();
+                DELAY_1_CLK;
+                TXDlow();
+            }
         }
     }
+    
 }
 
 
@@ -244,10 +220,6 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, uchar len) {
 	return 1; // Data read, not expecting more
 }
 
-
-#define STATE_WAIT 0
-#define STATE_SEND_KEY 1
-#define STATE_RELEASE_KEY 2
 
 void key_down(uint8_t down_key) {
     /* we only add a key to our pressed list, when we have less than 6 already pressed.
@@ -396,7 +368,7 @@ uint8_t map(uint8_t keyCodeIn) {
 
 void parseKeyboardResponse() {
     uint8_t usbHIDcode = 0xFF;
-    if ((readFromKeyboard & 0b1111111100000000) != 0)
+    if ((readFromKeyboard & 0xFF00) != 0)
     {
         usbHIDcode = map((uint8_t)(readFromKeyboard >> 8));
 
@@ -435,14 +407,8 @@ void emergencyParse() {
 void startReading() {
     uchar i;
     DELAY_HALF_KB_CLK();
-    // pb5high();rea
-    if (newResponse)
-    {
-        // #weCantEven
-    } else {
-        // srsly
-        // readFromKeyboard = readFromKeyboard << 1;
-    }
+    // wiggleHigh();rea
+
     for (i = 0; i < 8; i++)
     {
         DELAY_FULL_KB_CLK();
@@ -457,18 +423,13 @@ void startReading() {
     if (readFromKeyboard & 0x01)
     {
         parseKeyboardResponse();
-        newResponse = 1;
         wiggle(2);
     } else {
-        newResponse = 0;
         wiggle(3);
         emergencyResponceCounter = 2000;
         
     }
     DELAY_HALF_KB_CLK();
-    // pb5low();
-    // the additional wait time is for not detecting another byte right at the end of this one
-    // 420 would be enought but just to be sure 500
 }
 
 
@@ -507,20 +468,20 @@ int main() {
     usbInit();
     sei();
     ledRedOff();
-    pb3low();
+    TXDlow();
     
     for (;;) {
         usbPoll();
         if (PINB & (1 << PB4))
         {
             // ledRedOn();
-            // pb5high();
+            // wiggleHigh();
             ledRedOn();
             emergencyResponceCounter = 0;
             startReading();
 
         } else {
-            // pb5low();
+            // wiggleLow();
             if (emergencyResponceCounter == 1)
             {
                 emergencyParse();
