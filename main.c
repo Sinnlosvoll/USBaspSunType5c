@@ -252,6 +252,7 @@ void key_up(uint8_t up_key) {
 
 void toggleModifier(uchar key) {
     keyboard_report.modifier ^= key;
+    keysHaveChanged = 1;
 }
 
 
@@ -274,7 +275,6 @@ uint8_t map(uint8_t keyCodeIn) {
         case 0x7C : return 0x30; // ] (pound key)
         case 0x2a : return 0x2a; // backspace
         case 0x64 : return 0x28; // enter
-        case 0x88 : toggleModifier((1 << 5)); return 0xFF; // right shift
         case 0x60 : return 0x2c; // spacebar
         case 0xe6 : return 0x50; // leftArrow
         case 0x26 : return 0x51; // downarrow
@@ -283,10 +283,13 @@ uint8_t map(uint8_t keyCodeIn) {
         case 0x84 : return 0x62; // keypad 0
         case 0xb2 : return 0x63; // keypad ,
         case 0xa4 : return 0x58; // keypad enter
-        case 0xe0 : toggleModifier((1 << 3)); return 0xFF;// meta left
+        case 0xe0 : toggleModifier((1 << 3)); return 0xFF; // meta left
         case 0x36 : toggleModifier((1 << 2)); return 0xFF; // alt left
         case 0xcc : toggleModifier((1 << 0)); return 0xFF; // ctrl left
         case 0x38 : toggleModifier((1 << 1)); return 0xFF; // shift left
+        case 0x88 : toggleModifier((1 << 5)); return 0xFF; // shift right
+        case 0xa0 : toggleModifier((1 << 7)); return 0xFF; // meta right
+        case 0x4e : toggleModifier((1 << 6)); return 0xFF; // alt right (alt graph)
         case 0x10 : return 0x39; // capslock
         case 0x52 : return 0x2b; // tabulator
         case 0xb8 : return 0x53; // num lock
@@ -313,11 +316,11 @@ uint8_t map(uint8_t keyCodeIn) {
         case 0xee : return 0x3c; //
         case 0xae : return 0x3d; //
         case 0xce : return 0x3e; //
-        case 0x8e : return 0x3f; //
-        case 0xf5 : return 0x40; //
-        case 0xe5 : return 0x41; //
-        case 0xb5 : return 0x42; //
-        case 0x1e : return 0x43; //
+        case 0x8e : return 0x3f; // F6
+        case 0xf6 : return 0x40; //
+        case 0x76 : return 0x41; // F8
+        case 0xb6 : return 0x42; //
+        case 0x1e : return 0x43; // F10
         case 0x6e : return 0x44; //
         case 0x2e : return 0x45; // F12
         case 0xaa : return 0x35; // `
@@ -344,7 +347,7 @@ uint8_t map(uint8_t keyCodeIn) {
         case 0x8a : return 0x54; // keypad /
         case 0x0a : return 0x55; // keypad *
         case 0x1c : return 0x56; // keypad -
-        case 0x4d : return 0x57; // keypad +
+        case 0x40 : return 0x57; // keypad +
         case 0xF0 : return 0x59; // keypad 1
         case 0x70 : return 0x5a; //
         case 0xb0 : return 0x5b; //
@@ -354,7 +357,7 @@ uint8_t map(uint8_t keyCodeIn) {
         case 0xdc : return 0x5f; //
         case 0x5c : return 0x60; //
         case 0x9c : return 0x61; // keypad 9
-        case 0xc9 : return 0x49; // insert
+        case 0xca : return 0x49; // insert
         case 0xd2 : return 0x4a; // home
         case 0xF8 : return 0x4b; // PgUp 
         case 0xbc : return 0x4c; // delete

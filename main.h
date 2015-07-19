@@ -26,8 +26,8 @@
 
 #define TXD_PIN  			PB3
 #define TXD_PORT 			PORTB
-#define TXDhigh()    		TXD_PORT &= ~(1 << TXD_PIN)
-#define TXDlow()     	TXD_PORT |= (1 << TXD_PIN)
+#define TXDlow()    		TXD_PORT &= ~(1 << TXD_PIN)
+#define TXDhigh()     		TXD_PORT |= (1 << TXD_PIN)
 
 
 // due to the 12MHz crystal a clk is 83.33ns
