@@ -47,4 +47,4 @@
 #define resetKbrd()	  sendToKeyboard(0x01)
 #define clickOn()	  sendToKeyboard(0x0A)
 #define clickOff()	  sendToKeyboard(0x0B)
-#define getLayout()	  sendToKeyboard(0x0F
+#define getLayout()	  sendToKeyboard(0x0F)

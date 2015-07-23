@@ -50,10 +50,10 @@ PROGMEM const char usbHidReportDescriptor[USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH] 
     0x95, 0x06,                    /*   REPORT_COUNT (6) */
     0x75, 0x08,                    /*   REPORT_SIZE (8) */
     0x15, 0x00,                    /*   LOGICAL_MINIMUM (0) */
-    0x25, 0x65,                    /*   LOGICAL_MAXIMUM (101) */
+    0x25, 0x90,                    /*   LOGICAL_MAXIMUM (101) */
     0x05, 0x07,                    /*   USAGE_PAGE (Keyboard)(Key Codes) */
     0x19, 0x00,                    /*   USAGE_MINIMUM (Reserved (no event indicated))(0) */
-    0x29, 0x65,                    /*   USAGE_MAXIMUM (Keyboard Application)(101) */
+    0x29, 0x90,                    /*   USAGE_MAXIMUM (Keyboard Application)(101) */
     0x81, 0x00,                    /*   INPUT (Data,Ary,Abs) */
     0xc0                           /* END_COLLECTION */
 };
@@ -72,6 +72,7 @@ signed char keys_pressed = 0;
 uint8_t keysHaveChanged = 0;
 uint16_t emergencyResponceCounter = 0;
 uint8_t leds = 0;
+int8_t keyClickIsOn = 0;
 
 
 usbMsgLen_t usbFunctionSetup(uchar data[8]) {
@@ -209,12 +210,13 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, uchar len) {
         ledGreenOff(); // LED off
         leds &= ~(1 << 2);
     }
+    /*
     if(LED_state & COMPOSE){
         leds |= (1 << 1);
     }
     else {
         leds &= ~(1 << 1);
-    }
+    } this is now used to display the click status*/
     updateLeds();
 	
 	return 1; // Data read, not expecting more
@@ -255,9 +257,25 @@ void toggleModifier(uchar key) {
     keysHaveChanged = 1;
 }
 
+void resetKeys() {
+    uint8_t i;
+    for (i = 0; i < 6; i++)
+    {
+        keyboard_report.keycode[i] = 0;
+        keys_pressed = 0;
+        keyboard_report.modifier &= 0x8; // keep compose led
+        keysHaveChanged = 0;
+
+        keyClickIsOn = 0;
+        leds &= ~(1 << 1);
+        updateLeds();
+    }
+}
+
 
 uint8_t map(uint8_t keyCodeIn) {
     switch ((keyCodeIn & ~(0x01))) {
+        case 0x7e : resetKeys();  bellOn(); _delay_ms(5); bellOff(); return 0xFF;
         case 0x4c : return 0x04; // a
         case 0x8c : return 0x16; // s
         case 0x0c : return 0x07; // d
@@ -272,7 +290,7 @@ uint8_t map(uint8_t keyCodeIn) {
         case 0x82 : return 0x12; // o
         case 0x02 : return 0x13; // p
         case 0xFC : return 0x2f; // [ (ü-key)
-        case 0x7C : return 0x30; // ] (pound key)
+        // case 0x7C : return 0x30; // ] (pound key) not the actual one
         case 0x2a : return 0x2a; // backspace
         case 0x64 : return 0x28; // enter
         case 0x60 : return 0x2c; // spacebar
@@ -301,8 +319,10 @@ uint8_t map(uint8_t keyCodeIn) {
         case 0x54 : return 0x0f; // l
         case 0x94 : return 0x33; // ; ö
         case 0x14 : return 0x34; // ' ä
+        case 0x7c : return 0x31; // \ # 
         case 0xd8 : return 0x1d; // z
-        case 0x58 : return 0x1b; // x
+        case 0x58 : return 0xea; // x
+//        case 0x58 : return 0x1b; // x
         case 0x98 : return 0x06; // c
         case 0x18 : return 0x19; // v
         case 0xe8 : return 0x05; // b
@@ -341,9 +361,25 @@ uint8_t map(uint8_t keyCodeIn) {
         case 0x16 : return 0x47; // scroll lock
         case 0x56 : return 0x48; // pause
         case 0x4a : return 0x7f; // mute
-        case 0xb7 : return 0x81; // vol down
-        case 0xd7 : return 0x80; // vol up 
-        case 0xf2 : return 0x66; // power
+        case 0xbe : return 0x81; // vol down *works after adjsting the LOGICAL_MAXIMUM to over 101*
+        case 0xde : return 0x80; // vol up *doesn't work for some reason*
+        case 0xf2 : if (keyClickIsOn >= 2){
+                            keyClickIsOn--;
+                        }  else  {
+                            if (keyClickIsOn == 1)
+                            {
+                                keyClickIsOn = 0;
+                                clickOff();
+                                leds &= ~(1 << 1);
+                                updateLeds();
+                            } else {
+                                clickOn();
+                                keyClickIsOn = 3;
+                                leds |= (1 << 1);
+                                updateLeds();
+                            }
+
+                        } return 0xFF; // power button
         case 0x8a : return 0x54; // keypad /
         case 0x0a : return 0x55; // keypad *
         case 0x1c : return 0x56; // keypad -
@@ -363,6 +399,8 @@ uint8_t map(uint8_t keyCodeIn) {
         case 0xbc : return 0x4c; // delete
         case 0xac : return 0x4d; // end
         case 0x20 : return 0x4e; // PgDn
+        case 0x90 : return 0x75;
+         // help key
 
 
         default : return 0xFF; // return error code
@@ -429,7 +467,7 @@ void startReading() {
         wiggle(2);
     } else {
         wiggle(3);
-        emergencyResponceCounter = 2000;
+        emergencyResponceCounter = 1;
         
     }
     DELAY_HALF_KB_CLK();
@@ -469,6 +507,7 @@ int main() {
 
     /* main event loop */
     usbInit();
+    resetKeys();
     sei();
     ledRedOff();
     TXDlow();
