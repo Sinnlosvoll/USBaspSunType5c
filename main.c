@@ -50,10 +50,10 @@ PROGMEM const char usbHidReportDescriptor[USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH] 
     0x95, 0x06,                    //   REPORT_COUNT (6)
     0x75, 0x08,                    //   REPORT_SIZE (8)
     0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
-    0x25, 0x65,                    //   LOGICAL_MAXIMUM (101)
+    0x25, 0xFF,                    //   LOGICAL_MAXIMUM (101)
     0x05, 0x07,                    //   USAGE_PAGE (Keyboard)(Key Codes)
     0x19, 0x00,                    //   USAGE_MINIMUM (Reserved (no event indicated))(0)
-    0x29, 0x65,                    //   USAGE_MAXIMUM (Keyboard Application)(101)
+    0x29, 0xFF,                    //   USAGE_MAXIMUM (Keyboard Application)(101)
     0x81, 0x00,                    //   INPUT (Data,Ary,Abs)
     0xc0                           // END_COLLECTION
 };
@@ -282,7 +282,13 @@ void toggleModifier(uchar key) {
     keyboard_report.modifier ^= key;
     keysHaveChanged = 1;
 }
-
+void resetKeysDown() {
+    uint8_t i;
+    for (   i = 0; i < 6; i++)
+    {
+        keyboard_report.keycode[i] = 0;
+    }
+}
 
 uint8_t map(uint8_t keyCodeIn) {
     switch ((keyCodeIn & ~(0x01))) {
@@ -394,6 +400,7 @@ uint8_t map(uint8_t keyCodeIn) {
         case 0x20 : return 0x4e; // PgDn
         case 0xe4 : return 0x30; // \|
         case 0xc0 : return 0x64; // <>|(german)
+        case 0x90 : resetKeysDown(); return 0xFF; // reset keys on help
 
         default : return 0xFF; // return error code
     }
