@@ -283,6 +283,8 @@ void toggleModifier(uchar key) {
     keyboard_report.modifier ^= key;
     keysHaveChanged = 1;
 }
+
+// clear internal record of keys pressed
 void resetKeysDown() {
     uint8_t i;
     for (   i = 0; i < 6; i++)
@@ -417,8 +419,9 @@ uint8_t map(uint8_t keyCodeIn) {
 
 void parseKeyboardResponse() {
     uint8_t usbHIDcode = 0xFF;
-    if ((readFromKeyboard & 0b1111111100000000) != 0)
-    {
+
+    if ((readFromKeyboard & 0b1111111100000000) != 0) {
+        // break code 
         usbHIDcode = map((uint8_t)(readFromKeyboard >> 8));
 
         if (usbHIDcode == 0xFF)
@@ -427,6 +430,7 @@ void parseKeyboardResponse() {
             key_up(usbHIDcode);
 
     } else {
+        // make code
         usbHIDcode = map((uint8_t)(readFromKeyboard >> 0));
         if (usbHIDcode == 0xFF)
             wiggle(12);
@@ -448,22 +452,32 @@ void emergencyParse() {
     // for an unknown reason there is no break command for that key, only for the last one of that sequence that comes back up
     key_up(map((uint8_t)readFromKeyboard));
     readFromKeyboard = 0;
+    // notification for "debugger"
     wiggle(4);
     displayValue(readFromKeyboard);
 }
 
 
+
+
+// this function reads the keycodes sent by the keyboard by waiting half a clock 
+// cycle and then reading 8 bits by waiting a clock after each one
+// keyboard clock cycles that is, so 833µs due to the 1200 baud the keyboard uses
+
 void startReading() {
     uchar i;
     DELAY_HALF_KB_CLK();
-    // pb5high();rea
-    if (newResponse)
-    {
-        // #weCantEven
-    } else {
-        // srsly
-        // readFromKeyboard = readFromKeyboard << 1;
-    }
+
+
+// probably not needed due to single byte transfer restrictions on keyboard side
+    
+    // if (newResponse)
+    // {
+    //     // #weCantEven
+    // } else {
+    //     // srsly
+    //     // readFromKeyboard = readFromKeyboard << 1;
+    // }
     for (i = 0; i < 8; i++)
     {
         DELAY_FULL_KB_CLK();
@@ -479,9 +493,11 @@ void startReading() {
     {
         parseKeyboardResponse();
         newResponse = 1;
+        // indicate measurement
         wiggle(2);
     } else {
         newResponse = 0;
+        // indicate measurement
         wiggle(3);
         emergencyResponseCounter = 2000;
         
@@ -537,7 +553,7 @@ int main() {
         //  check for new usb events
         usbPoll();
 
-        // if PB4 high
+        // if start bit is recieved
         if (PINB & (1 << PB4))
         {
             // ledRedOn();
