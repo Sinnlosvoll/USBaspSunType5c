@@ -71,8 +71,9 @@ uint32_t readFromKeyboard = 0;
 uchar newResponse = 0;
 signed char keys_pressed = 0;
 uchar keysHaveChanged = 0;
-uint16_t emergencyResponceCounter = 0;
+uint16_t emergencyResponseCounter = 0;
 uint8_t leds = 0;
+uint8_t keyBoardHasReported = 0;
 
 
 usbMsgLen_t usbFunctionSetup(uchar data[8]) {
@@ -290,7 +291,15 @@ void resetKeysDown() {
     }
 }
 
+
+//  the mapping function which turns the keycode from the keyboard into the usb keycode
+
 uint8_t map(uint8_t keyCodeIn) {
+    if (keyBoardHasReported == 0)
+    {
+        keyBoardHasReported = 1;
+        return 0xFF;
+    }
     switch ((keyCodeIn & ~(0x01))) {
         case 0x4c : return 0x04; // a
         case 0x8c : return 0x16; // s
@@ -384,7 +393,7 @@ uint8_t map(uint8_t keyCodeIn) {
         case 0x1c : return 0x56; // keypad -
         case 0x4d : return 0x57; // keypad +
         case 0xF0 : return 0x59; // keypad 1
-        case 0x70 : return 0x5a; //
+        case 0x70 : return 0x5a; // 
         case 0xb0 : return 0x5b; //
         case 0x24 : return 0x5c; //
         case 0xc4 : return 0x5d; //
@@ -474,7 +483,7 @@ void startReading() {
     } else {
         newResponse = 0;
         wiggle(3);
-        emergencyResponceCounter = 2000;
+        emergencyResponseCounter = 2000;
         
     }
     DELAY_HALF_KB_CLK();
@@ -517,33 +526,40 @@ int main() {
 
     /* main event loop */
     usbInit();
+    // allow interrupts
     sei();
+
+    // signal stuff for debug
     ledRedOff();
     pb3low();
     
     for (;;) {
+        //  check for new usb events
         usbPoll();
+
+        // if PB4 high
         if (PINB & (1 << PB4))
         {
             // ledRedOn();
             // pb5high();
             ledRedOn();
-            emergencyResponceCounter = 0;
+            emergencyResponseCounter = 0;
             startReading();
 
         } else {
             // pb5low();
-            if (emergencyResponceCounter == 1)
+            if (emergencyResponseCounter == 1)
             {
                 emergencyParse();
-                emergencyResponceCounter = 0;
+                emergencyResponseCounter = 0;
             } else {
-                if (emergencyResponceCounter > 0) 
-                    emergencyResponceCounter--;
+                if (emergencyResponseCounter > 0) 
+                    emergencyResponseCounter--;
             }
             ledRedOff();
             //ledGreenOff();
         }
+        // guess: send new pressed keys to os if they changed
         if (usbInterruptIsReady() && keysHaveChanged)
         {
             usbSetInterrupt((void *)&keyboard_report, sizeof(keyboard_report));
