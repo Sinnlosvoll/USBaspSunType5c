@@ -1,11 +1,13 @@
-# WinAVR cross-compiler toolchain is used here
+# AVR-gcc cross-compiler toolchain is used here
 CC = avr-gcc
 OBJCOPY = avr-objcopy
 DUDE = avrdude
 
-# If you are not using ATtiny85 and the USBtiny programmer, 
+# If you are not using USBasp and another USBasp as a programmer, 
 # update the lines below to match your configuration
-CFLAGS = -Wall -O3 -Iusbdrv  -mmcu=atmega8 -DF_CPU=12000000 -pedantic
+CFLAGS = -Wall -O3 -Iusbdrv  -mmcu=atmega8 -DF_CPU=12000000
+# skip pedantic, as it throws warnings for usbdrv.c for single byte casting
+# CFLAGS = -Wall -O3 -Iusbdrv  -mmcu=atmega8 -DF_CPU=12000000 -pedantic
 OBJFLAGS = -j .text -j .data -O ihex
 DUDEFLAGS = -p atmega8 -c usbasp -v
 
@@ -14,7 +16,7 @@ OBJECTS = usbdrv/usbdrv.o usbdrv/oddebug.o usbdrv/usbdrvasm.o main.o
 
 # By default, build the firmware and command-line client, but do not flash
 all: main.hex
-
+	
 # With this, you can flash the firmware by just typing "make flash" on command-line
 flash: main.hex
 	$(DUDE) $(DUDEFLAGS) -U flash:w:$<
