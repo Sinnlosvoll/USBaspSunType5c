@@ -32,7 +32,7 @@ git clone https://github.com/Sinnlosvoll/USBaspSunType5c && cd USBaspSunType5c
 ```
 
 Now connect one of the USBasps to a usb port and attach the cable to the other one.
-[IMG]
+![USBasp flashing](doc/images/usbaspflashing.jpg)
 
 Type but **don't execute** the following command
 ```
@@ -64,7 +64,7 @@ Now we need to create the cable that the adapter uses to talk to the keyboard.
 In order for the adapter to talk to the keyboard an adapter cable needs to be created.
 Take one of the two cables that came with the USBasps and cut the cable at about 16cm.
 Attach the female pinheader to the cable ends as in this image shown:
-[adapter cable](doc/images/adaptercable.png)
+![adapter cable](doc/images/adaptercable.png)
 Once that is done I recommend to add some hot glue to the pinheaders back, in order to make it easier to insert and protect it from accidental shorts.
 
 #### Fully hidden adapter, no chassis modification
@@ -88,9 +88,9 @@ For the hub to be useable the ports need to be cut out of the back of the keyboa
  - use your favorite method of removal of the remaining material to allow the usb hub to fit each usb port into the now square holes
  - attach the usb-hub inside the keyboard using super-glue and material from the case of the hub
 Now it should look like this:
-[USB HUB cutout](doc/images/usbhubCutOut)
+![USB HUB cutout](doc/images/usbhubCutOut)
 Finally attach the extended usb plug to the hub on the outside. 
-[usbaspwithhubexternalcable](doc/images/usbaspinplace.jpg)
+![usbaspwithhubexternalcable](doc/images/usbaspinplace.jpg)
 
 It might not be the most beautiful method, but the pitch on the usb 3 connector directly is hard to solder and removing the port itself poses risks of breaking the pcb/traces.
 
