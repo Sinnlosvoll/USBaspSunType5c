@@ -1,22 +1,22 @@
-# USBaspSunType5c
+﻿# USBaspSunType5c
 
 A single board computer adapter based on the USBasp in-circuit-programmer that adapts the 1994 built Sun Type 5c keyboard to a USB interface using standard USB HID drivers.
 
 ## Getting Started
 
-So you have your own Sun Type 5c keyboard sitting around idle in your closet because you dont have the workstation to go with it anymore? I have great news for you. You can use it literally anywhere with any device that has a usb port available. You will need to do some modifications though. This is a guide to almost invisibly adapting the Type 5c to usb.
+So you have your own Sun Type 5c keyboard sitting around idle in your closet because you don't have the workstation to go with it anymore? I have great news for you. You can use it literally anywhere with any device that has a USB port available. You will need to do some modifications though. This is a guide to almost invisibly adapting the Type 5c to USB.
 
 ### What you need
  - a Sun Type 5c
  - a tiny USB 3.0 hub
  - two USBasp
- - linux
+ - Linux
  - a flat-headed screw-driver
  - a soldering iron
  - a piece of (solid core) wire or a paper-clip
- - a 6 pin female 2.54mm pitch pinheader
+ - a 6 pin female 2.54mm pitch pin header
 
-Also useful would be an usb 3.0 extension cord, if you don't want to use it on a raspberry pi zero.
+Also useful would be an USB 3.0 extension cord, if you don't want to use it on a raspberry pi zero.
 
 ### Preparing the actual adapter
 
@@ -31,14 +31,14 @@ After installing the required software clone the repo:
 git clone https://github.com/Sinnlosvoll/USBaspSunType5c && cd USBaspSunType5c
 ```
 
-Now connect one of the USBasps to a usb port and attach the cable to the other one.
+Now connect one of the USBasps to a USB port and attach the cable to the other one.
 ![USBasp flashing](doc/images/usbaspflashing.jpg)
 
 Type but **don't execute** the following command
 ```
 sudo make flash
 ```
-Connect the paper-clip to both pads marked _J2_ on the USBasp that is not connected to the usb port.
+Connect the paper-clip to both pads marked _J2_ on the USBasp that is not connected to the USB port.
 
 _Hit enter._
 
@@ -63,9 +63,9 @@ Now we need to create the cable that the adapter uses to talk to the keyboard.
 
 In order for the adapter to talk to the keyboard an adapter cable needs to be created.
 Take one of the two cables that came with the USBasps and cut the cable at about 16cm.
-Attach the female pinheader to the cable ends as in this image shown:
+Attach the female pin header to the cable ends as in this image shown:
 ![adapter cable](doc/images/adaptercable.png)
-Once that is done I recommend to add some hot glue to the pinheaders back, in order to make it easier to insert and protect it from accidental shorts.
+Once that is done I recommend to add some hot glue to the pin header’s back, in order to make it easier to insert and protect it from accidental shorts.
 
 #### Fully hidden adapter, no chassis modification
 
@@ -79,7 +79,7 @@ Now connect the extended plug to one port of the hub and snugly put both boards 
 
 If you would rather have a usb 3 hub inside your Type 5c and don't care about it that much (already scratched by other people) then the procedure is a bit different. You still need to extend the usb plug away from the USBasp board, but this this it needs to go outside and back into the hub. Cable length should be around 15cm. 
 
-For the hub to be useable the ports need to be cut out of the back of the keyboard:
+For the hub to be usable the ports need to be cut out of the back of the keyboard:
  - first remove the case of the usb hub.
  - mark the location of the ports on the back of the keyboard using a marker.
  	+ note the orientation of the usb ports, an inserted usb stick should have the holes on top
@@ -97,16 +97,16 @@ It might not be the most beautiful method, but the pitch on the usb 3 connector 
 ### Attaching the adapter
 
 Now take the soldered adapter cable and plug each end into the fitting plug on the adapter and the keyboard respectively.
-Place the usb-hub's cable through the center hole of the keyboard, where the original cable came in.
+Place the USB-hub's cable through the center hole of the keyboard, where the original cable came in.
 
 
 ### Using it
 
-after having completed all the steps above you can now plug in the usb-extension to the cable hanging out the bottom of the keyboard and then starat having fun. Or type. Whatever you want to do.
+after having completed all the steps above you can now plug in the USB-extension to the cable hanging out the bottom of the keyboard and then start having fun. Or type. Whatever you want to do.
 
 ## But why?
 
-One night going to my local hack-shack I just saw this 'little' Keyboard lying in front of the door, amongst a pile of other older computing equipment. I couldn't bear seeing a perfectly useable keyboard going to be crushed or thrown on a landfill so I took it home. The rest is logical.
+One night going to my local hack-shack I just saw this 'little' Keyboard lying in front of the door, amongst a pile of other older computing equipment. I couldn't bear seeing a perfectly usable keyboard going to be crushed or thrown on a landfill so I took it home. The rest is logical.
 
 ## Contributing
 
@@ -125,4 +125,4 @@ This project is licensed under the GPL3 License - see the [LICENSE](LICENSE) fil
 * [Thomas Fischl](http://www.fischl.de/usbasp/) for his awesome USBasp programmers
 * [Code-and-life](http://codeandlife.com/2012/02/22/v-usb-with-attiny45-attiny85-without-a-crystal/) for his tutorial motivating me to do this
 * [MightyPork](https://gist.github.com/MightyPork/6da26e382a7ad91b5496ee55fdc73db2) For the keycode file
-* [OBDev](https://www.obdev.at/products/vusb/index.html) For their amazing work getting the software only usb emulation onto avrs
+* [OBDev](https://www.obdev.at/products/vusb/index.html) For their amazing work getting the software only USB emulation onto avrs
