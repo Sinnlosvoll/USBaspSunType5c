@@ -5,7 +5,7 @@ DUDE = avrdude
 
 # If you are not using USBasp and another USBasp as a programmer, 
 # update the lines below to match your configuration
-CFLAGS = -Wall -O3 -Iusbdrv  -mmcu=atmega8 -DF_CPU=12000000
+CFLAGS = -Wall -Os -Iusbdrv  -mmcu=atmega8 -DF_CPU=12000000 -flto
 # skip pedantic, as it throws warnings for usbdrv.c for single byte casting
 # CFLAGS = -Wall -O3 -Iusbdrv  -mmcu=atmega8 -DF_CPU=12000000 -pedantic
 OBJFLAGS = -j .text -j .data -O ihex

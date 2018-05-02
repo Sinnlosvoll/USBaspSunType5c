@@ -1,3 +1,6 @@
+uint8_t soundIsOn = 0;
+
+
 
 void wiggle(uint8_t times) {
 	uint8_t i;
@@ -10,6 +13,16 @@ void wiggle(uint8_t times) {
 	}
 }
 
+void toggleSound() {
+	if (soundIsOn == 1)
+	{
+		clickOff();
+	} else {
+		clickOn();
+	}
+}
+
+
 /*
 * uses an additional pin on the usbasp to serially write out a value
 */
@@ -19,18 +32,19 @@ void displayValue32(uint32_t toDisplay) {
 
 	for (counter = 0; counter < 32; counter++)
 	{
+		debugtx_low();
 		debugtx_hi();
 		debugtx_low();
 		if (loopVariable & 0x01)
 		{
 			debugtx_hi();
-			DELAY_1_CLK;
+			DELAY_10_CLK;
 
 		} else {
 			debugtx_low();
-			DELAY_1_CLK;
+			DELAY_10_CLK;
 		}
-		loopVariable = loopVariable << 1;
+		loopVariable = loopVariable >> 1;
 	}
 	debugtx_low();
 }

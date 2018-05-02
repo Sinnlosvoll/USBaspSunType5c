@@ -1,19 +1,21 @@
 #ifndef HELPERFUNC_H
 #define HELPERFUNC_H
 
-#define ledRedOn()	 	PORTC &= ~(1 << PC1)
-#define ledRedOff()		PORTC |= (1 << PC1)
-#define debugtx_hi()	PORTC |= (1 << PC2)
-#define debugtx_low()	PORTC &= ~(1 << PC2)
-#define tx_low()		PORTB &= ~(1 << PB3)
-#define tx_hi()	  		PORTB |= (1 << PB3)
+#define ledRedOn()	 		PORTC &= ~(1 << PC1)
+#define ledRedOff()			PORTC |= (1 << PC1)
+#define debugtx_hi()		PORTC |= (1 << PC2)
+#define debugtx_low()		PORTC &= ~(1 << PC2)
+#define tx_low()				PORTB &= ~(1 << PB3)
+#define tx_hi()	  			PORTB |= (1 << PB3)
 #define ledGreenOn()  	PORTC &= ~(1 << PC0)
 #define ledGreenOff() 	PORTC |= (1 << PC0)
-#define bellOn()		sendToKeyboard(0x02, 1)
-#define bellOff()	  	sendToKeyboard(0x03, 1)
-#define updateLeds()  	sendToKeyboard(0x00e, 1);sendToKeyboard(leds, 1)
-#define DELAY_HALF_KB_CLK() _delay_us(417)
-#define DELAY_FULL_KB_CLK() _delay_us(833)
+#define bellOn()				sendToKeyboard(0x02, 1)
+#define bellOff()	  		sendToKeyboard(0x03, 1)
+#define clickOn() 			soundIsOn = 1;sendToKeyboard(0x0a, 1)
+#define clickOff()    	soundIsOn = 0;sendToKeyboard(0x0b, 1)
+#define updateLeds()  	sendToKeyboard(0x0e, 1);sendToKeyboard(leds, 1)
+#define resetKbrd()	  sendToKeyboard(0x01)
+#define getLayout()	  sendToKeyboard(0x0F)
 
 // due to the 12MHz crystal a clk is 83.33ns
 #define DELAY_1_CLK asm volatile("nop")
@@ -22,7 +24,11 @@
 // 10 are 833.33 ns
 #define DELAY_10_CLK DELAY_5_CLK;DELAY_5_CLK
 
+#define DELAY_HALF_KB_CLK() _delay_us(417)
+#define DELAY_FULL_KB_CLK() _delay_us(833)
 
+
+void toggleSound();
 void wiggle(uchar times);
 void displayValue32(uint32_t toDisplay);
 void displayValue8(uint8_t toDisplay);

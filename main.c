@@ -11,9 +11,12 @@
 #include <avr/eeprom.h>
 #include <util/delay.h>
 
-#include "usbdrv.h"
 #include "clock.h"
+#include "usbdrv.h"
+#include "main.h"
+#include "keycodes.h"
 #include "helperFunctions.h"
+
 
 
 // ************************
@@ -69,7 +72,7 @@ static uint8_t idleRate; // repeat rate for keyboardseport; // sent to PC
 // static keyboard_report_t keyboard_report; // sent to PC
 // volatile static uint8_t LED_state = 0xff; // received from PC
 // static uint8_t idleRate; // repeat rate for keyboards
-extern uint32_t readFromKeyboard = 0;
+uint32_t readFromKeyboard = 0;
 uint8_t newResponse = 0;
 uint8_t keys_pressed = 0;
 uint8_t keysHaveChanged = 0;
@@ -102,17 +105,6 @@ usbMsgLen_t usbFunctionSetup(uint8_t data[8]) {
 	
 	return 0; // by default don't return any data
 }
-
-#define NUM_LOCK	 1
-#define CAPS_LOCK	2
-#define SCROLL_LOCK 4
-#define COMPOSE	  0x08
-
-
-
-
-
-
 
 
 void sendToKeyboard(uint8_t toSend, uint8_t isLastOne) {
@@ -199,10 +191,6 @@ usbMsgLen_t usbFunctionWrite(uint8_t * data, uint8_t len) {
 }
 
 
-#define STATE_WAIT 0
-#define STATE_SEND_KEY 1
-#define STATE_RELEASE_KEY 2
-
 void key_down(uint8_t down_key) {
 	/* we only add a key to our pressed list, when we have less than 6 already pressed.
 	** additional keys will be ignored  */
@@ -253,130 +241,134 @@ void resetKeysDown() {
 //  the mapping function which turns the keycode from the keyboard into the usb keycode
 
 uint8_t map(uint8_t keyCodeIn) {
-	if (keyBoardHasReported == 0)
+	if (keyBoardHasReported < 2)
 	{
-		keyBoardHasReported = 1;
+		keyBoardHasReported++;
 		return 0xFF;
 	}
 	switch ( keyCodeIn ) {
-		case 0x05 : return 0x3a; // F1
-		case 0x06 : return 0x3b; // F2
-		case 0x07 : return 0x43; // F10
-		case 0x08 : return 0x3c; // F3
-		case 0x09 : return 0x44; // F11
-		case 0x0a : return 0x3d; // F4
-		case 0x0b : return 0x45; // F12
-		case 0x0c : return 0x3e; // F5
+		case 0x02 : return KEY_VOLUMEDOWN;
+		case 0x04 : return KEY_VOLUMEUP;
+		case 0x05 : return KEY_F1;
+		case 0x06 : return KEY_F2;
+		case 0x07 : return KEY_F10;
+		case 0x08 : return KEY_F3;
+		case 0x09 : return KEY_F11;
+		case 0x0a : return KEY_F4;
+		case 0x0b : return KEY_F12;
+		case 0x0c : return KEY_F5;
 		case 0x0d : toggleModifier((1 << 6)); return 0xFF; // alt right (graph)
-		case 0x0e : return 0x3f; // F6
-		case 0x10 : return 0x40; // F7
-		case 0x11 : return 0x41; // F8
-		case 0x12 : return 0x42; // F9
+		case 0x0e : return KEY_F6;
+		case 0x10 : return KEY_F7;
+		case 0x11 : return KEY_F8;
+		case 0x12 : return KEY_F9;
 		case 0x13 : toggleModifier((1 << 2)); return 0xFF; // alt left
-		case 0x15 : return 0x48; // pause
-		case 0x16 : return 0x46; // printscrn
-		case 0x17 : return 0x47; // scroll lock
-		case 0x1d : return 0x29; // esc
-		case 0x1e : return 0x1e; // 1
-		case 0x1f : return 0x1f; // 2 
-		case 0x20 : return 0x20; // 3
-		case 0x21 : return 0x21; // 4
-		case 0x22 : return 0x22; // 5
-		case 0x23 : return 0x23; // 6
-		case 0x24 : return 0x24; // 7
-		case 0x25 : return 0x25; // 8
-		case 0x26 : return 0x26; // 9
-		case 0x27 : return 0x27; // 0
-		case 0x28 : return 0x2D; // -
-		case 0x29 : return 0x2E; // =
-		case 0x2b : return 0x2a; // backspace
-		case 0x2e : return 0x54; // keypad /
-		case 0x2f : return 0x55; // keypad *
-		case 0x32 : return 0x4c; // delete
-		case 0x35 : return 0x2b; // tabulator
-		case 0x36 : return 0x14; // q
-		case 0x37 : return 0x1a; // w
-		case 0x38 : return 0x08; // e
-		case 0x39 : return 0x15; // r
-		case 0x3a : return 0x17; // t
-		case 0x3b : return 0x1C; // y (z-key)
-		case 0x3c : return 0x0c; // u
-		case 0x3d : return 0x18; // i
-		case 0x3e : return 0x12; // o
-		case 0x3f : return 0x13; // p
-		case 0x40 : return 0x2f; // [ (ü-key)
-		case 0x41 : return 0x32; // ] (pound key)
+		case 0x14 : return KEY_UP;
+		case 0x15 : return KEY_PAUSE;
+		case 0x16 : return KEY_SYSRQ;
+		case 0x17 : return KEY_SCROLLLOCK;
+		case 0x18 : return KEY_LEFT; 
+		case 0x1b : return KEY_DOWN; 
+		case 0x1c : return KEY_RIGHT; 
+		case 0x1d : return KEY_ESC;
+		case 0x1e : return KEY_1;
+		case 0x1f : return KEY_2;
+		case 0x20 : return KEY_3;
+		case 0x21 : return KEY_4;
+		case 0x22 : return KEY_5;
+		case 0x23 : return KEY_6;
+		case 0x24 : return KEY_7;
+		case 0x25 : return KEY_8;
+		case 0x26 : return KEY_9;
+		case 0x27 : return KEY_0;
+		case 0x28 : return KEY_MINUS;
+		case 0x29 : return KEY_EQUAL;
+		case 0x2a : return KEY_GRAVE;
+		case 0x2b : return KEY_BACKSPACE;
+		case 0x2c : return KEY_INSERT;
+		case 0x2d : return KEY_MUTE;
+		case 0x2e : return KEY_KPSLASH;
+		case 0x2f : return KEY_KPASTERISK;
+		case 0x30 : return KEY_POWER;
+		case 0x32 : return KEY_KPDOT; 
+		case 0x34 : return KEY_HOME; 
+		case 0x35 : return KEY_TAB;
+		case 0x36 : return KEY_Q;
+		case 0x37 : return KEY_W;
+		case 0x38 : return KEY_E;
+		case 0x39 : return KEY_R;
+		case 0x3a : return KEY_T;
+		case 0x3b : return KEY_Y;
+		case 0x3c : return KEY_U;
+		case 0x3d : return KEY_I;
+		case 0x3e : return KEY_O;
+		case 0x3f : return KEY_P;
+		case 0x40 : return KEY_LEFTBRACE;
+		case 0x41 : return KEY_RIGHTBRACE;
 		case 0x43 : toggleModifier((1 << 4)); return 0xFF; //compose mapped to r_ctrl
-		//case 0x44 : return 0x5e; // keypad 6
-		case 0x45 : return 0x52; // uparrow
-		case 0x46 : return 0x4b; // PgUp 
-		case 0x47 : return 0x56; // keypad -
-		case 0x4a : return 0x7f; // mute
-		case 0x4c : toggleModifier((1 << 0)); return 0xFF; // delete
-		case 0x4d : return 0x04; // a
-		case 0x4e : return 0x16; // s
-		case 0x4f : return 0x07; // d
-		case 0x50 : return 0x09; // f
-		case 0x51 : return 0x0A; // g
-		case 0x52 : return 0x0b; // h
-		case 0x53 : return 0x0D; // j
-		case 0x54 : return 0x0e; // k
-		case 0x55 : return 0x0f; // l
-		case 0x56 : return 0x33; // ; ö
-		case 0x57 : return 0x34; // ' ä
-		case 0x58 : return 0x30; // \|
-		case 0x44 : return 0x4a; // home
-		case 0x59 : return 0x58; // keypad enter
-		case 0x5a : return 0x28; // enter
-		case 0x5b : return 0x50; // leftArrow
-		case 0x5d : return 0x4f; // rightArrow
-		case 0x5e : return 0x49; // insert
-		case 0x62 : return 0x53; // num lock
-		case 0x63 : toggleModifier((1 << 5)); return 0xFF; // right shift
-		case 0x64 : return 0x1d; // z
-		case 0x65 : return 0x1b; // x
-		case 0x66 : return 0x06; // c
-		case 0x67 : return 0x19; // v
-		case 0x68 : return 0x05; // b
-		case 0x69 : return 0x11; // n
-		case 0x6a : return 0x10; // m
-		case 0x6b : return 0x36; // ,
-		case 0x6c : return 0x37; // .
-		case 0x6d : return 0x38; // /
-		case 0x6e : toggleModifier((1 << 1)); return 0xFF; // shift left
-		case 0x70 : return 0x4d; // end
-		case 0x71 : return 0x51; // downarrow
-		case 0x72 : return 0x4e; // PgDn
-		case 0x77 : return 0x39; // capslock
+		case 0x44 : return KEY_KP7;
+		case 0x45 : return KEY_KP8;
+		case 0x46 : return KEY_KP9;
+		case 0x47 : return KEY_KPMINUS;
+		case 0x4a : return KEY_END;
+		case 0x4c : toggleModifier((1 << 0)); return 0xFF; // left crtl
+		case 0x4d : return KEY_A;
+		case 0x4e : return KEY_S;
+		case 0x4f : return KEY_D;
+		case 0x50 : return KEY_F;
+		case 0x51 : return KEY_G;
+		case 0x52 : return KEY_H;
+		case 0x53 : return KEY_J;
+		case 0x54 : return KEY_K;
+		case 0x55 : return KEY_L;
+		case 0x56 : return KEY_SEMICOLON;
+		case 0x57 : return KEY_APOSTROPHE;
+		case 0x58 : return KEY_BACKSLASH;
+		case 0x59 : return KEY_ENTER;
+		case 0x5a : return KEY_KPENTER;
+		case 0x5b : return KEY_KP4;
+		case 0x5c : return KEY_KP5;
+		case 0x5d : return KEY_KP6;
+		case 0x5e : return KEY_KP0;
+		case 0x60 : return KEY_PAGEUP;
+		case 0x62 : return KEY_NUMLOCK;
+		case 0x63 : toggleModifier((1 << 5)); return 0xFF; // left shift
+		case 0x64 : return KEY_Z; 
+		case 0x65 : return KEY_X; 
+		case 0x66 : return KEY_C; 
+		case 0x67 : return KEY_V; 
+		case 0x68 : return KEY_B; 
+		case 0x69 : return KEY_N; 
+		case 0x6a : return KEY_M; 
+		case 0x6b : return KEY_COMMA;
+		case 0x6c : return KEY_DOT;
+		case 0x6d : return KEY_SLASH;
+		case 0x6e : toggleModifier((1 << 1)); return 0xFF; // right shift
+		case 0x70 : return KEY_KP1; 
+		case 0x71 : return KEY_KP2; 
+		case 0x72 : return KEY_KP3; 
+		case 0x77 : return KEY_CAPSLOCK; 
 		case 0x78 : toggleModifier((1 << 3)); return 0xFF;// meta left
-		case 0x79 : return 0x2c; // spacebar
+		case 0x79 : return KEY_SPACE; 
 		case 0x7a : toggleModifier((1 << 7)); return 0xFF; // meta right
-		case 0x7d : return 0x57; // keypad +
-		case 0x90 : resetKeysDown(); return 0xFF; // reset keys on help
-		case 0xaa : return 0x32; // `
-		case 0xbE : return 0x81; // vol down
-		case 0xc0 : return 0x64; // <>|(german)
-		case 0xcc : toggleModifier((1 << 0)); return 0xFF; // ctrl left
-		case 0xdE : return 0x80; // vol up 
-		case 0xf2 : return 0x66; // power
+		case 0x7b : return KEY_PAGEDOWN;
+		case 0x7c : return KEY_BACKSLASH;
+		case 0x7d : return KEY_KPPLUS; 
 
+		case 0x76 : toggleSound(); return KEY_HELP; // help
 
-		// keypads are not in the docs
-		// testing is needed
-		// case 0xb2 : return 0x63; // keypad ,
-		// case 0x84 : return 0x62; // keypad 0
-		// case 0xF0 : return 0x59; // keypad 1
-		// case 0x70 : return 0x5a; // keypad 2 
-		// case 0xb0 : return 0x5b; // keypad 3
-		// case 0x24 : return 0x5c; // keypad 4
-		// case 0xc4 : return 0x5d; // keypad 5
-		// case 0xdc : return 0x5f; // keypad 7
-		// case 0x5c : return 0x60; // keypad 8
-		// case 0x9c : return 0x61; // keypad 9
+		case 0x01 : return KEY_STOP; // stop
+		case 0x03 : return KEY_AGAIN; // wiederholen (again)
+		case 0x19 : return KEY_PROPS; // eigenschaften (props)
+		case 0x1A : return KEY_UNDO; // Zurücksetzen (undo)
+		case 0x31 : return KEY_FRONT; // Vordergrung (front)
+		case 0x33 : return KEY_COPY; // Kopieren (copy)
+		case 0x48 : return KEY_OPEN; // Öffnen (open)
+		case 0x49 : return KEY_PASTE; // Einsetzen (paste)
+		case 0x5F : return KEY_FIND; // Suchen (find)
+		case 0x61 : return KEY_CUT; // Ausschneiden (cut)
+
 		default : return 0xFF; // return error code
-
-		// what is 0x2D (=) mapped to when 0x29 is already =+
-		// shifts might be switched
 	}
 }
 
@@ -524,7 +516,7 @@ int main() {
 	ledRedOff();
 	tx_low();
 	
-	bellOn();
+	// bellOn();
 
 	for (;;) {
 		//  check for new usb events

@@ -1,54 +1,28 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
-/*  TOGGLES  */
-/* #define DEBUGMODE *//* enables/disables display of wiggles on WIGGLE_PIN */
+
+#define NUM_LOCK	0x01
+#define CAPS_LOCK	0x02
+#define SCROLL_LOCK 0x04
+#define COMPOSE		0x08
 
 
-#define NUM_LOCK    1
-#define CAPS_LOCK   2
-#define SCROLL_LOCK 4
-#define COMPOSE     0x08
+#define STATE_WAIT 0
+#define STATE_SEND_KEY 1
+#define STATE_RELEASE_KEY 2
 
-
-
-#define RED_LED_PIN 		PC1
-#define RED_LED_PORT 		PORTC
-#define ledRedOn()    		RED_LED_PORT &= ~(1 << RED_LED_PIN)
-#define ledRedOff()   		RED_LED_PORT |= (1 << RED_LED_PIN)
-
-#define LED_GREEN_PIN  		PC0
-#define LED_GREEN_PORT 		PORTC
-#define ledGreenOn() 	 	LED_GREEN_PORT &= ~(1 << LED_GREEN_PIN)
-#define ledGreenOff() 		LED_GREEN_PORT |= (1 << LED_GREEN_PIN)
-
-#define WIGGLE_PIN  		PB5
-#define WIGGLE_PORT 		PORTB
-#define wiggleHigh()     	WIGGLE_PORT |= (1 << WIGGLE_PIN)
-#define wiggleLow()      	WIGGLE_PORT &= ~(1 << WIGGLE_PIN)
-
-#define TXD_PIN  			PB3
-#define TXD_PORT 			PORTB
-#define TXDhigh()    		TXD_PORT &= ~(1 << TXD_PIN)
-#define TXDlow()     		TXD_PORT |= (1 << TXD_PIN)
-
-
-/* due to the 12MHz crystal a clk is 83.33ns */
-#define DELAY_1_CLK() asm volatile("nop")
-#define DELAY_HALF_KB_CLK() _delay_us(417)
-#define DELAY_FULL_KB_CLK() _delay_us(833)
-
-
-
-
- /* KEYBOARD COMMANDS */
-
-#define bellOn()      sendToKeyboard(0x02)
-#define bellOff()     sendToKeyboard(0x03)
-#define updateLeds()  sendToKeyboard(0x0e);sendToKeyboard(leds)
-#define resetKbrd()	  sendToKeyboard(0x01)
-#define clickOn()	  sendToKeyboard(0x0A)
-#define clickOff()	  sendToKeyboard(0x0B)
-#define getLayout()	  sendToKeyboard(0x0F)
+usbMsgLen_t usbFunctionSetup(uint8_t data[8]);
+void sendToKeyboard(uint8_t toSend, uint8_t isLastOne);
+usbMsgLen_t usbFunctionWrite(uint8_t * data, uint8_t len);
+void key_down(uint8_t down_key);
+void key_up(uint8_t up_key);
+void toggleModifier(uint8_t key);
+void resetKeysDown();
+uint8_t map(uint8_t keyCodeIn);
+void parseKeyboardResponse();
+void emergencyParse();
+void startReading();
+int main();
 
 #endif
